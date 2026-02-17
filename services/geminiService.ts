@@ -6,11 +6,9 @@ const normalizeEmail = (email: string): string => {
 
   let e = email.toLowerCase().trim();
 
-  // Correcciones típicas de dominio
   e = e.replace("htomail.com", "hotmail.com");
   e = e.replace("gamil.com", "gmail.com");
 
-  // Quitar acentos básicos en correo
   e = e
     .replace(/á|à|â|ä/g, "a")
     .replace(/é|è|ê|ë/g, "e")
@@ -25,7 +23,7 @@ const normalizeEmail = (email: string): string => {
 export const extractClientDataFromImage = async (
   frontBase64: string,
   backBase64?: string
-): Promise<ScanResult | null> => {
+): Promise<Omit<ScanResult, "photoBase64" | "photoBackBase64" | "scanType"> | null> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
     throw new Error("API Key is missing");
@@ -41,11 +39,11 @@ export const extractClientDataFromImage = async (
     - apellidos
     - empresa
     - cargo
-    - telefono   (primer teléfono que veas en la tarjeta)
-    - telefono2  (segundo teléfono si aparece; si no hay, devuelve "")
+    - telefono
+    - telefono2
     - correo
     - dni
-    - direccion  (calle y número, por ejemplo "Calle Mayor 12")
+    - direccion
     - poblacion
     - ciudad
     - estado
@@ -55,7 +53,6 @@ export const extractClientDataFromImage = async (
     - Si solo hay un teléfono, ponlo en "telefono" y deja "telefono2" como "".
     - Si la dirección está en varias líneas, júntala en "direccion".
     - Para el correo, lee literalmente lo que veas en la tarjeta.
-      No inventes acentos ni caracteres especiales raros.
   `;
 
   try {
@@ -81,9 +78,7 @@ export const extractClientDataFromImage = async (
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: {
-        parts,
-      },
+      contents: { parts },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -111,7 +106,7 @@ export const extractClientDataFromImage = async (
 
     const raw = JSON.parse(text) as any;
 
-    const normalized: ScanResult = {
+    const normalized = {
       nombres: raw.nombres || "",
       apellidos: raw.apellidos || "",
       empresa: raw.empresa || "",
@@ -124,9 +119,6 @@ export const extractClientDataFromImage = async (
       poblacion: raw.poblacion || "",
       ciudad: raw.ciudad || "",
       estado: raw.estado || "",
-      photoBase64: raw.photoBase64 || "",
-      photoBackBase64: raw.photoBackBase64 || "",
-      scanType: raw.scanType || "tarjeta",
       comentarios: raw.comentarios || "",
     };
 
