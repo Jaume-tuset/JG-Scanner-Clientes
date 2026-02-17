@@ -8,10 +8,8 @@ import SplashScreen from './components/SplashScreen';
 import { Home } from './components/Home';
 import { Client, ViewType, ScanResult } from './types';
 import { getClients, addClient, updateClient, deleteClient } from './services/clientsService';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { FileOpener } from '@capawesome-team/capacitor-file-opener';
 
-// Conversión segura de ArrayBuffer a base64 (por chunks)
+// Conversión segura de ArrayBuffer a base64 (por chunks) – ahora solo la mantengo por si la reaprovechas
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   let binary = '';
   const bytes = new Uint8Array(buffer);
@@ -26,7 +24,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(binary);
 };
 
-// Config caché PDFs
+// Config caché PDFs (lógica de expiración en localStorage)
 const PDF_CACHE_HOURS = 12;
 const PDF_CACHE_MS = PDF_CACHE_HOURS * 60 * 60 * 1000;
 
@@ -137,6 +135,7 @@ const App: React.FC = () => {
     setActiveTab('scanner');
   };
 
+  // Versión solo WEB de openEmbeddedPdf, manteniendo caché en localStorage
   const openEmbeddedPdf = async (webPath: string, fileName: string) => {
     try {
       const cacheKey = `pdf_cached_${fileName}`;
@@ -161,64 +160,34 @@ const App: React.FC = () => {
         }
       }
 
+      // Si el caché es válido, simplemente abrimos el PDF desde la URL
       if (isCachedValid && localStorage.getItem(cacheKey) === '1') {
-        console.log('>>> PDF cacheado vigente, abriendo desde Filesystem:', fileName);
-
-        const uriResult = await Filesystem.getUri({
-          path: fileName,
-          directory: Directory.Data,
-        });
-
-        await FileOpener.openFile({
-          path: uriResult.uri,
-        });
-
-        console.log('>>> PDF abierto desde caché OK');
+        console.log('>>> PDF cacheado vigente (lógica web), abriendo en nueva pestaña:', webPath);
+        window.open(webPath, '_blank', 'noopener,noreferrer');
         return;
       }
 
-      console.log('>>> PDF no cacheado o caducado, descargando desde', webPath);
+      console.log('>>> PDF no cacheado o caducado, verificando acceso a', webPath);
 
-      const response = await fetch(webPath);
-      console.log('>>> Status fetch', response.status);
+      // En web: solo comprobamos que el recurso existe
+      const response = await fetch(webPath, { method: 'HEAD' });
+      console.log('>>> Status HEAD', response.status);
 
       if (!response.ok) {
-        throw new Error(`No se pudo descargar ${webPath}: status ${response.status}`);
+        throw new Error(`No se pudo acceder a ${webPath}: status ${response.status}`);
       }
 
-      const blob = await response.blob();
-      console.log('>>> Tamaño blob', blob.size);
-
-      const buffer = await blob.arrayBuffer();
-      const base64Data = arrayBufferToBase64(buffer);
-
-      await Filesystem.writeFile({
-        path: fileName,
-        data: base64Data,
-        directory: Directory.Data,
-      });
-      console.log('>>> PDF guardado en Data como', fileName);
-
-      // Guardar metadata de caché
+      // Marcamos caché como válido (no guardamos archivo, solo metadata)
       localStorage.setItem(cacheKey, '1');
       localStorage.setItem(
         cacheMetaKey,
         JSON.stringify({ cachedAt: Date.now() }),
       );
 
-      const uriResult = await Filesystem.getUri({
-        path: fileName,
-        directory: Directory.Data,
-      });
-      console.log('>>> URI nativo', uriResult.uri);
-
-      await FileOpener.openFile({
-        path: uriResult.uri,
-      });
-
-      console.log('>>> PDF abierto OK (descargado y cacheado)');
+      console.log('>>> Marcando PDF como cacheado (web), abriendo en nueva pestaña');
+      window.open(webPath, '_blank', 'noopener,noreferrer');
     } catch (e) {
-      console.error('Error abriendo PDF interno', e);
+      console.error('Error abriendo PDF (web)', e);
       alert('No se ha podido abrir el PDF. Revisa la consola para más detalles.');
     }
   };
