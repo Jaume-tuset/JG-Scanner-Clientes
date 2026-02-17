@@ -7,7 +7,6 @@ import { takePhotoBase64 } from '../services/cameraService';
 import { extractClientDataFromQrText } from '../services/geminiQrTextService';
 import { extractClientDataFromQrImage } from '../services/geminiQrService';
 
-
 interface ScannerViewProps {
   onDataExtracted: (data: ScanResult) => void;
   onCancel: () => void;
@@ -22,8 +21,8 @@ const ScannerView: React.FC<ScannerViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [scanType, setScanType] = useState<'tarjeta' | 'qr'>(initialType as 'tarjeta' | 'qr');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputQrRef = useRef<HTMLInputElement>(null);
 
-  // Solo se usa si sigues usando ML Kit en vivo
   const [isScanningActive, setIsScanningActive] = useState(false);
 
   // Flujo multi-foto tarjeta
@@ -48,6 +47,19 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     } catch (err) {
       console.error('OCR error >>>', err);
       onDataExtracted({
+        nombres: '',
+        apellidos: '',
+        empresa: '',
+        cargo: '',
+        telefono: '',
+        telefono2: '',
+        correo: '',
+        dni: '',
+        direccion: '',
+        poblacion: '',
+        ciudad: '',
+        estado: '',
+        comentarios: '',
         photoBase64: frontDataUrl,
         photoBackBase64: backDataUrl || '',
         scanType,
@@ -68,9 +80,10 @@ const ScannerView: React.FC<ScannerViewProps> = ({
       setScanStep('askBack');
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
-  // MODO QR 1: ML Kit en vivo (lo puedes dejar o no usarlo)
+  // MODO QR 1: ML Kit en vivo (solo móvil)
   const handleScanQr = async () => {
     setIsScanningActive(true);
 
@@ -129,42 +142,63 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     await processBase64Images(frontImage, backImage);
   };
 
-// MODO QR: foto + ML Kit + Gemini (texto o imagen)
-const handleScanQrWithPhotoAndText = async () => {
-  // 1) Foto del QR (para guardar y para Gemini imagen)
-  const dataUrl = await takePhotoBase64();
-  if (!dataUrl) return;
+  // MODO QR móvil: foto + ML Kit + Gemini (texto o imagen)
+  const handleScanQrWithPhotoAndText = async () => {
+    // Solo usar en nativo
+    const dataUrl = await takePhotoBase64();
+    if (!dataUrl) return;
 
-  const base64 = dataUrl.split(',')[1] || '';
+    const base64 = dataUrl.split(',')[1] || '';
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    let parsed: ScanResult | null = null;
+    try {
+      let parsed: ScanResult | null = null;
 
-    // 2) Intentar primero leer el QR como TEXTO con ML Kit
-    const content = await startQrScan();
+      // 1) Intentar primero leer el QR como TEXTO con ML Kit
+      const content = await startQrScan();
+      console.log('RESULTADO startQrScan >>>', content);
 
-    if (content) {
-      // Interpretar el TEXTO del QR con Gemini
-      parsed = await extractClientDataFromQrText(content);
-    }
+      if (content) {
+        parsed = await extractClientDataFromQrText(content);
+      }
 
-    // 3) Si no hay datos útiles, intentar leer el QR directamente desde la IMAGEN
-    if (!parsed) {
-      const fromImage = await extractClientDataFromQrImage(base64);
-      parsed = fromImage;
-    }
+      // 2) Si no hay datos útiles, intentar leer el QR desde la IMAGEN
+      if (!parsed) {
+        const fromImage = await extractClientDataFromQrImage(base64);
+        parsed = fromImage;
+      }
 
-    // 4) Construir resultado final
-    if (parsed) {
-      onDataExtracted({
-        ...parsed,
-        photoBase64: dataUrl,
-        photoBackBase64: '',
-        scanType: 'qr',
-      } as ScanResult);
-    } else {
+      // 3) Construir resultado final
+      if (parsed) {
+        onDataExtracted({
+          ...parsed,
+          photoBase64: dataUrl,
+          photoBackBase64: '',
+          scanType: 'qr',
+        } as ScanResult);
+      } else {
+        onDataExtracted({
+          nombres: '',
+          apellidos: '',
+          empresa: '',
+          cargo: '',
+          telefono: '',
+          telefono2: '',
+          correo: '',
+          dni: '',
+          direccion: '',
+          poblacion: '',
+          ciudad: '',
+          estado: '',
+          photoBase64: dataUrl,
+          photoBackBase64: '',
+          scanType: 'qr',
+          comentarios: 'QR vacío o no legible',
+        } as ScanResult);
+      }
+    } catch (e) {
+      console.error('Error QR combinado >>>', e);
       onDataExtracted({
         nombres: '',
         apellidos: '',
@@ -181,34 +215,82 @@ const handleScanQrWithPhotoAndText = async () => {
         photoBase64: dataUrl,
         photoBackBase64: '',
         scanType: 'qr',
-        comentarios: 'QR vacío o no legible',
+        comentarios: 'Error procesando QR',
       } as ScanResult);
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    console.error('Error QR combinado >>>', e);
-    onDataExtracted({
-      nombres: '',
-      apellidos: '',
-      empresa: '',
-      cargo: '',
-      telefono: '',
-      telefono2: '',
-      correo: '',
-      dni: '',
-      direccion: '',
-      poblacion: '',
-      ciudad: '',
-      estado: '',
-      photoBase64: dataUrl,
-      photoBackBase64: '',
-      scanType: 'qr',
-      comentarios: 'Error procesando QR',
-    } as ScanResult);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  // MODO QR web: elegir imagen con QR y procesar con Gemini
+  const handleQrFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(',')[1] || '';
+
+      setLoading(true);
+      try {
+        const parsed = await extractClientDataFromQrImage(base64);
+        console.log('QR IMAGE parsed >>>', parsed);
+
+        if (parsed) {
+          onDataExtracted({
+            ...parsed,
+            photoBase64: dataUrl,
+            photoBackBase64: '',
+            scanType: 'qr',
+          } as ScanResult);
+        } else {
+          onDataExtracted({
+            nombres: '',
+            apellidos: '',
+            empresa: '',
+            cargo: '',
+            telefono: '',
+            telefono2: '',
+            correo: '',
+            dni: '',
+            direccion: '',
+            poblacion: '',
+            ciudad: '',
+            estado: '',
+            photoBase64: dataUrl,
+            photoBackBase64: '',
+            scanType: 'qr',
+            comentarios: 'QR vacío o no legible',
+          } as ScanResult);
+        }
+      } catch (err) {
+        console.error('Error QR web >>>', err);
+        onDataExtracted({
+          nombres: '',
+          apellidos: '',
+          empresa: '',
+          cargo: '',
+          telefono: '',
+          telefono2: '',
+          correo: '',
+          dni: '',
+          direccion: '',
+          poblacion: '',
+          ciudad: '',
+          estado: '',
+          photoBase64: dataUrl,
+          photoBackBase64: '',
+          scanType: 'qr',
+          comentarios: 'Error procesando QR en web',
+        } as ScanResult);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   return (
     <div
@@ -271,12 +353,11 @@ const handleScanQrWithPhotoAndText = async () => {
           </div>
 
           <div
-          className={`relative w-full max-w-sm group h-[38vh] max-h-[230px] transition-all duration-500 ${
-            isScanningActive ? 'mt-16' : 'mt-2'
-          }`}
-        >
-          {/* Marco un poco más pequeño dentro del contenedor */}
-          <div className="absolute inset-4 border-[3px] border-blue-600/20 rounded-[2.5rem] bg-blue-50/5"></div>
+            className={`relative w-full max-w-sm group h-[38vh] max-h-[230px] transition-all duration-500 ${
+              isScanningActive ? 'mt-16' : 'mt-2'
+            }`}
+          >
+            <div className="absolute inset-4 border-[3px] border-blue-600/20 rounded-[2.5rem] bg-blue-50/5"></div>
             <div className="absolute top-0 left-0 w-14 h-14 border-t-8 border-l-8 border-blue-600 rounded-tl-[2rem] shadow-[-5px_-5px_15px_rgba(37,99,235,0.2)]"></div>
             <div className="absolute top-0 right-0 w-14 h-14 border-t-8 border-r-8 border-blue-600 rounded-tr-[2rem] shadow-[5px_-5px_15px_rgba(37,99,235,0.2)]"></div>
             <div className="absolute bottom-0 left-0 w-14 h-14 border-b-8 border-l-8 border-blue-600 rounded-bl-[2rem] shadow-[-5px_5px_15px_rgba(37,99,235,0.2)]"></div>
@@ -377,7 +458,13 @@ const handleScanQrWithPhotoAndText = async () => {
           <div className="flex items-center justify-center px-6">
             {scanType === 'qr' ? (
               <button
-                onClick={handleScanQrWithPhotoAndText}
+                onClick={() => {
+                  if (Capacitor.getPlatform() === 'web') {
+                    fileInputQrRef.current?.click();
+                  } else {
+                    handleScanQrWithPhotoAndText();
+                  }
+                }}
                 className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_15px_30px_rgba(37,99,235,0.4)] border-[10px] border-white active:scale-90 transition-all"
               >
                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">
@@ -424,6 +511,15 @@ const handleScanQrWithPhotoAndText = async () => {
         capture="environment"
         ref={fileInputRef}
         onChange={handleFileChange}
+        className="hidden"
+      />
+
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        ref={fileInputQrRef}
+        onChange={handleQrFileChange}
         className="hidden"
       />
 
