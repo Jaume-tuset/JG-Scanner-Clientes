@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Client, ScanResult } from '../types';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
-
 interface ClientFormProps {
   initialData?: Client | ScanResult | null;
   onSave: (client: Omit<Client, 'id' | 'createdAt'>) => void;
@@ -17,7 +16,6 @@ const buildMapsUrl = (direccion?: string) => {
 
 const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   const [formData, setFormData] = useState<Omit<Client, 'id' | 'createdAt'>>({
     razonSocial: '',
@@ -91,11 +89,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
     typeOther2: '',
   });
 
-  // Aplicar initialData solo una vez
+  // Aplicar initialData SIEMPRE que cambie (escáner o editar)
   useEffect(() => {
-    if (!initialData || isInitialized) return;
+    console.log('ClientForm initialData >>>', initialData);
+    if (!initialData) return;
 
     const d = initialData as any;
+
     setFormData(prev => ({
       ...prev,
       // DATOS DE CONTACTO
@@ -170,8 +170,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
       typeOther2: d.typeOther2 || '',
     }));
 
-    setIsInitialized(true);
-  }, [initialData, isInitialized]);
+    // cada vez que llega un escaneo/cliente nuevo, empezamos en el paso 1
+    setStep(1);
+  }, [initialData]);
 
   const handleCheckboxChange = (name: keyof typeof formData) => {
     setFormData(prev => ({ ...prev, [name]: !prev[name] as any }));
@@ -184,6 +185,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
   const handlePrev = () => {
     setStep(prev => (prev > 1 ? (prev - 1) as 1 | 2 | 3 : prev));
   };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -200,7 +202,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
     const wantsPhoto = window.confirm('¿Deseas una foto para tu perfil?');
 
     if (!wantsPhoto) {
-      // Sin foto de perfil: se guardará con iniciales
       const dataToSave = {
         ...formData,
         mapsUrl: buildMapsUrl(formData.direccion) || '',
@@ -229,7 +230,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
       onSave(dataToSave);
     } catch (err) {
       console.error('Error al tomar la foto', err);
-      // Si falla la cámara o el usuario cancela, guarda sin foto de perfil
       const dataToSave = {
         ...formData,
         mapsUrl: buildMapsUrl(formData.direccion) || '',
@@ -239,8 +239,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
     }
   };
 
-
-
   const SectionHeader = ({ title }: { title: string }) => (
     <div className="bg-gray-100/50 px-6 py-3">
       <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
@@ -248,6 +246,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
       </h3>
     </div>
   );
+
   const ToggleField = ({
     label,
     name,
@@ -264,17 +263,18 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
         {label}
       </span>
       <span
-        className={`w-10 h-5 flex items-center rounded-full px-1 ${(formData as any)[name] ? 'bg-blue-600' : 'bg-gray-300'
-          }`}
+        className={`w-10 h-5 flex items-center rounded-full px-1 ${
+          (formData as any)[name] ? 'bg-blue-600' : 'bg-gray-300'
+        }`}
       >
         <span
-          className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${(formData as any)[name] ? 'translate-x-4' : ''
-            }`}
+          className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${
+            (formData as any)[name] ? 'translate-x-4' : ''
+          }`}
         />
       </span>
     </button>
   );
-
 
   return (
     <div className="flex flex-col h-full bg-white z-[80] absolute inset-0 animate-slide-up pb-24 overflow-x-hidden">
@@ -324,8 +324,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
         {[1, 2, 3].map(n => (
           <div
             key={n}
-            className={`flex-1 h-1.5 rounded-full ${step >= n ? 'bg-blue-600' : 'bg-gray-200'
-              }`}
+            className={`flex-1 h-1.5 rounded-full ${
+              step >= n ? 'bg-blue-600' : 'bg-gray-200'
+            }`}
           />
         ))}
       </div>
