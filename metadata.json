@@ -1,0 +1,7 @@
+{
+  "name": "JG Señalización - Scan & Clients",
+  "description": "Mobile application for scanning IDs (DNI) or QR codes to manage client data efficiently for JG Señalización.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

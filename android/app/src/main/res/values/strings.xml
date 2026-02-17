@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name" translatable="false">JG - Test 2</string>
+    <string name="title_activity_main" translatable="false">JG - Test 2</string>
+    <string name="package_name">com.tuempresa.scannerclientes</string>
+    <string name="custom_url_scheme">com.tuempresa.scannerclientes</string>
+</resources>
