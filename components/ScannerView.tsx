@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { takePhotoBase64 } from '../services/cameraService';
 import { extractClientDataFromQrText } from '../services/geminiQrTextService';
 import { extractClientDataFromQrImage } from '../services/geminiQrService';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface ScannerViewProps {
   onDataExtracted: (data: ScanResult) => void;
@@ -21,7 +22,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [scanType, setScanType] = useState<'tarjeta' | 'qr'>(initialType as 'tarjeta' | 'qr');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileInputQrRef = useRef<HTMLInputElement>(null);
   const [isScanningActive, setIsScanningActive] = useState(false);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
@@ -180,20 +180,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Web: elegir imagen para QR
-  const handleQrFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      await processQrFromImageDataUrl(dataUrl);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
   };
 
   return (
@@ -360,12 +346,18 @@ const ScannerView: React.FC<ScannerViewProps> = ({
             {scanType === 'qr' ? (
               <button
                 onClick={async () => {
-                  if (Capacitor.getPlatform() === 'web') {
-                    fileInputQrRef.current?.click();
-                  } else {
-                    const dataUrl = await takePhotoBase64();
-                    if (!dataUrl) return;
+                  try {
+                    const image = await Camera.getPhoto({
+                      quality: 80,
+                      allowEditing: false,
+                      resultType: CameraResultType.Base64,
+                      source: CameraSource.Camera,
+                    });
+
+                    const dataUrl = `data:image/jpeg;base64,${image.base64String}`;
                     await processQrFromImageDataUrl(dataUrl);
+                  } catch (e) {
+                    console.error('Error abriendo cámara para QR >>>', e);
                   }
                 }}
                 className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_15px_30px_rgba(37,99,235,0.4)] border-[10px] border-white active:scale-90 transition-all"
@@ -414,15 +406,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         capture="environment"
         ref={fileInputRef}
         onChange={handleFileChange}
-        className="hidden"
-      />
-
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        ref={fileInputQrRef}
-        onChange={handleQrFileChange}
         className="hidden"
       />
 

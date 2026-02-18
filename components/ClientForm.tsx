@@ -90,89 +90,91 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
   });
 
   // Aplicar initialData SIEMPRE que cambie (escáner o editar)
-  useEffect(() => {
-    console.log('ClientForm initialData >>>', initialData);
-    if (!initialData) return;
+useEffect(() => {
+  console.log('ClientForm initialData >>>', initialData);
+  if (!initialData) return;
 
-    const d = initialData as any;
+  const d = initialData as any;
 
-    setFormData(prev => ({
-      ...prev,
-      // DATOS DE CONTACTO
-      razonSocial: d.razonSocial || d.empresa || '',
-      nombres: d.nombres || '',
-      apellidos: d.apellidos || '',
-      nif: d.nif || d.dni || '',
-      equivalenceSurcharge: !!d.equivalenceSurcharge,
-      direccion: d.direccion || '',
-      province: d.province || '',
-      poblacion: d.poblacion || '',
-      postalCode: d.postalCode || '',
-      telefono: d.telefono || '',
-      telefono2: d.telefono2 || '',
-      fax: d.fax || '',
-      correo: d.correo || '',
-      invoiceEmail: d.invoiceEmail || '',
-      isCooperativeMember: !!d.isCooperativeMember,
-      cooperativeNumber: d.cooperativeNumber || '',
-      purchasingContactName: d.purchasingContactName || '',
-      purchasingContactEmail: d.purchasingContactEmail || '',
-      purchasingContactPhone: d.purchasingContactPhone || '',
+  setFormData(prev => ({
+    ...prev,
+    // DATOS DE CONTACTO
+    razonSocial: d.razonSocial || d.empresa || '',
+    nombres: d.nombres || '',
+    apellidos: d.apellidos || '',
+    nif: d.nif || d.dni || '',
+    equivalenceSurcharge: !!d.equivalenceSurcharge,
 
-      // GENERALES
-      empresa: d.empresa || '',
-      cargo: d.cargo || '',
-      web: d.web || '',
-      dni: d.dni || '',
-      ciudad: d.ciudad || '',
-      estado: d.estado || '',
-      comentarios: d.comentarios || '',
-      mapsUrl: d.mapsUrl || '',
-      photoBase64: d.photoBase64 || '',
-      photoBackBase64: d.photoBackBase64 || '',
-      profilePhotoBase64: d.profilePhotoBase64 || '',
-      scanType: d.scanType || 'manual',
+    // direccion: admitir tanto Client como ScanResult
+    direccion: d.direccion || '',
+    province: d.province || d.estado || '',
+    poblacion: d.poblacion || d.localidad || '',
+    postalCode: d.postalCode || d.codigoPostal || '',
+    telefono: d.telefono || '',
+    telefono2: d.telefono2 || '',
+    fax: d.fax || '',
+    correo: d.correo || '',
+    invoiceEmail: d.invoiceEmail || d.correo || '',
+    isCooperativeMember: !!d.isCooperativeMember,
+    cooperativeNumber: d.cooperativeNumber || '',
+    purchasingContactName: d.purchasingContactName || '',
+    purchasingContactEmail: d.purchasingContactEmail || '',
+    purchasingContactPhone: d.purchasingContactPhone || '',
 
-      // INTERÉS DE COMPRA
-      interestSignage: !!d.interestSignage,
-      interestStreetPlates: !!d.interestStreetPlates,
-      interestSpeedBumpsMirrors: !!d.interestSpeedBumpsMirrors,
-      interestBollardsBikeRacks: !!d.interestBollardsBikeRacks,
-      interestBalizamientoH75: !!d.interestBalizamientoH75,
-      interestProtections: !!d.interestProtections,
-      interestTripodsPosts: !!d.interestTripodsPosts,
-      interestMobileBases: !!d.interestMobileBases,
-      interestPlasticMetalFences: !!d.interestPlasticMetalFences,
-      interestWorksiteBalizamiento: !!d.interestWorksiteBalizamiento,
-      interestConesAccessories: !!d.interestConesAccessories,
-      interestSpraysTapes: !!d.interestSpraysTapes,
-      interestConstructionTools: !!d.interestConstructionTools,
-      interestVehicleSignage: !!d.interestVehicleSignage,
-      interestSignageBoards: !!d.interestSignageBoards,
-      interestNoParking: !!d.interestNoParking,
-      interestStreetPlates2: !!d.interestStreetPlates2,
-      interestParkingClamps: !!d.interestParkingClamps,
+    // GENERALES
+    empresa: d.empresa || '',
+    cargo: d.cargo || '',
+    web: d.web || '',
+    dni: d.dni || '',
+    ciudad: d.ciudad || '',
+    estado: d.estado || '',
+    comentarios: d.comentarios || '',
+    mapsUrl: d.mapsUrl || '',
+    photoBase64: d.photoBase64 || '',
+    photoBackBase64: d.photoBackBase64 || '',
+    profilePhotoBase64: d.profilePhotoBase64 || '',
+    scanType: d.scanType || 'manual',
 
-      // TIPOLOGÍA
-      typeSupplyIndustry: !!d.typeSupplyIndustry,
-      typeIndustrialScreenPrinting: !!d.typeIndustrialScreenPrinting,
-      typeConstructionSupply: !!d.typeConstructionSupply,
-      typeVehicleWrapping: !!d.typeVehicleWrapping,
-      typeAgriculturalSupply: !!d.typeAgriculturalSupply,
-      typeSignage: !!d.typeSignage,
-      typeRental: !!d.typeRental,
-      typeWorkClothing: !!d.typeWorkClothing,
-      typeAutoParts: !!d.typeAutoParts,
-      typeSafetyEquipment: !!d.typeSafetyEquipment,
-      typeHardwareStore: !!d.typeHardwareStore,
-      typeHousehold: !!d.typeHousehold,
-      typeOther1: d.typeOther1 || '',
-      typeOther2: d.typeOther2 || '',
-    }));
+    // INTERÉS DE COMPRA
+    interestSignage: !!d.interestSignage,
+    interestStreetPlates: !!d.interestStreetPlates,
+    interestSpeedBumpsMirrors: !!d.interestSpeedBumpsMirrors,
+    interestBollardsBikeRacks: !!d.interestBollardsBikeRacks,
+    interestBalizamientoH75: !!d.interestBalizamientoH75,
+    interestProtections: !!d.interestProtections,
+    interestTripodsPosts: !!d.interestTripodsPosts,
+    interestMobileBases: !!d.interestMobileBases,
+    interestPlasticMetalFences: !!d.interestPlasticMetalFences,
+    interestWorksiteBalizamiento: !!d.interestWorksiteBalizamiento,
+    interestConesAccessories: !!d.interestConesAccessories,
+    interestSpraysTapes: !!d.interestSpraysTapes,
+    interestConstructionTools: !!d.interestConstructionTools,
+    interestVehicleSignage: !!d.interestVehicleSignage,
+    interestSignageBoards: !!d.interestSignageBoards,
+    interestNoParking: !!d.interestNoParking,
+    interestStreetPlates2: !!d.interestStreetPlates2,
+    interestParkingClamps: !!d.interestParkingClamps,
 
-    // cada vez que llega un escaneo/cliente nuevo, empezamos en el paso 1
-    setStep(1);
-  }, [initialData]);
+    // TIPOLOGÍA
+    typeSupplyIndustry: !!d.typeSupplyIndustry,
+    typeIndustrialScreenPrinting: !!d.typeIndustrialScreenPrinting,
+    typeConstructionSupply: !!d.typeConstructionSupply,
+    typeVehicleWrapping: !!d.typeVehicleWrapping,
+    typeAgriculturalSupply: !!d.typeAgriculturalSupply,
+    typeSignage: !!d.typeSignage,
+    typeRental: !!d.typeRental,
+    typeWorkClothing: !!d.typeWorkClothing,
+    typeAutoParts: !!d.typeAutoParts,
+    typeSafetyEquipment: !!d.typeSafetyEquipment,
+    typeHardwareStore: !!d.typeHardwareStore,
+    typeHousehold: !!d.typeHousehold,
+    typeOther1: d.typeOther1 || '',
+    typeOther2: d.typeOther2 || '',
+  }));
+
+  setStep(1);
+}, [initialData]);
+
 
   const handleCheckboxChange = (name: keyof typeof formData) => {
     setFormData(prev => ({ ...prev, [name]: !prev[name] as any }));
