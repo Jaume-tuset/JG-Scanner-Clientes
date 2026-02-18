@@ -155,18 +155,18 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     try {
       let parsed: ScanResult | null = null;
 
-      // 1) Intentar primero leer el QR como TEXTO con ML Kit
-      const content = await startQrScan();
-      console.log('RESULTADO startQrScan >>>', content);
+      // 1) Intentar primero leer el QR desde la IMAGEN
+      const fromImage = await extractClientDataFromQrImage(base64);
+      parsed = fromImage;
 
-      if (content) {
-        parsed = await extractClientDataFromQrText(content);
-      }
-
-      // 2) Si no hay datos útiles, intentar leer el QR desde la IMAGEN
+      // 2) Solo si no hay datos útiles, intentar leer el QR como TEXTO con ML Kit
       if (!parsed) {
-        const fromImage = await extractClientDataFromQrImage(base64);
-        parsed = fromImage;
+        const content = await startQrScan();
+        console.log('RESULTADO startQrScan >>>', content);
+
+        if (content) {
+          parsed = await extractClientDataFromQrText(content);
+        }
       }
 
       // 3) Construir resultado final
@@ -292,6 +292,72 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     e.target.value = '';
   };
 
+  // MODO QR web: leer el QR desde la foto frontal de la tarjeta ya capturada
+  const handleScanQrFromFrontImageWeb = async () => {
+    if (!frontImage) {
+      alert('Primero haz la foto de la tarjeta (frontal).');
+      return;
+    }
+
+    const base64 = frontImage.split(',')[1] || '';
+    setLoading(true);
+
+    try {
+      const parsed = await extractClientDataFromQrImage(base64);
+      console.log('QR desde foto tarjeta (web) >>>', parsed);
+
+      if (parsed) {
+        onDataExtracted({
+          ...parsed,
+          photoBase64: frontImage,
+          photoBackBase64: backImage || '',
+          scanType: 'qr',
+        } as ScanResult);
+      } else {
+        onDataExtracted({
+          nombres: '',
+          apellidos: '',
+          empresa: '',
+          cargo: '',
+          telefono: '',
+          telefono2: '',
+          correo: '',
+          dni: '',
+          direccion: '',
+          poblacion: '',
+          ciudad: '',
+          estado: '',
+          photoBase64: frontImage,
+          photoBackBase64: backImage || '',
+          scanType: 'qr',
+          comentarios: 'QR vacío o no legible en la foto',
+        } as ScanResult);
+      }
+    } catch (e) {
+      console.error('Error leyendo QR desde foto tarjeta (web) >>>', e);
+      onDataExtracted({
+        nombres: '',
+        apellidos: '',
+        empresa: '',
+        cargo: '',
+        telefono: '',
+        telefono2: '',
+        correo: '',
+        dni: '',
+        direccion: '',
+        poblacion: '',
+        ciudad: '',
+        estado: '',
+        photoBase64: frontImage,
+        photoBackBase64: backImage || '',
+        scanType: 'qr',
+        comentarios: 'Error procesando QR desde la foto de la tarjeta',
+      } as ScanResult);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className={`fixed inset-0 z-[100] flex flex-col h-screen overflow-hidden animate-fade-in transition-colors duration-300 ${
@@ -387,6 +453,19 @@ const ScannerView: React.FC<ScannerViewProps> = ({
               </div>
             </div>
           )}
+
+          {scanType === 'tarjeta' &&
+            frontImage &&
+            Capacitor.getPlatform() === 'web' && (
+              <div className="px-6 mt-2">
+                <button
+                  onClick={handleScanQrFromFrontImageWeb}
+                  className="w-full px-4 py-3 rounded-full bg-blue-100 text-blue-700 text-xs font-black uppercase tracking-widest"
+                >
+                  Leer QR de la foto (web)
+                </button>
+              </div>
+            )}
 
           {loading && (
             <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-[110] flex flex-col items-center justify-center space-y-4">

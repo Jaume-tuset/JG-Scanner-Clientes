@@ -30,35 +30,42 @@ export const extractClientDataFromQrImage = async (
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-    En esta imagen hay un CÓDIGO QR (posiblemente junto a una tarjeta o texto).
+En esta imagen hay un CÓDIGO QR (posiblemente junto a una tarjeta o texto).
 
-    1) Primero, lee el contenido del QR de la imagen.
-    2) Si el QR contiene datos de contacto (por ejemplo en formato vCard, MeCard, JSON o texto estructurado),
-       interpreta esos datos y mapea a los siguientes campos.
+1) Primero, LEE el contenido EXACTO del QR (texto plano).
+2) Después, si el contenido del QR está en formato vCard, MeCard, JSON u otro texto estructurado,
+   interpreta SOLO esos datos y mapea a los siguientes campos.
 
-    Devuélveme SIEMPRE un JSON con exactamente estos campos:
-    - nombres
-    - apellidos
-    - empresa
-    - cargo
-    - telefono
-    - telefono2
-    - correo
-    - dni
-    - direccion
-    - poblacion
-    - ciudad
-    - estado
-    - comentarios
+Devuélveme SIEMPRE un JSON con exactamente estos campos:
+- nombres
+- apellidos
+- empresa
+- cargo
+- telefono
+- telefono2
+- correo
+- dni
+- direccion
+- poblacion
+- ciudad
+- estado
+- comentarios
 
-    Reglas importantes:
-    - No devuelvas null en ningún campo, solo texto o "".
-    - Si solo hay un teléfono, ponlo en "telefono" y deja "telefono2" como "".
-    - Si el QR solo contiene una URL o un identificador, deja todos los campos vacíos
-      excepto "comentarios", donde pondrás exactamente el texto del QR.
-    - Para el correo, lee literalmente lo que veas en el QR (o su contenido),
-      y deja el campo vacío si no hay correo claro.
-  `;
+REGLAS MUY ESTRICTAS (NO LAS INCUMPLES NUNCA):
+- SOLO rellenes campos si el dato está claramente presente y etiquetado en el CONTENIDO DEL QR
+  (por ejemplo claves vCard como N:, FN:, ORG:, TEL:, EMAIL:, ADR:
+   o claves JSON como "name", "company", "phone", "email", etc.).
+- NO deduzcas ni infieras datos a partir de frases de la tarjeta, nombres de dominio,
+  texto de marketing o elementos visuales de la imagen.
+- Si NO estás 100% seguro de un dato, ese campo debe ser "".
+- Si el contenido del QR NO parece una vCard/MeCard/JSON clara, deja TODOS los campos vacíos
+  excepto "comentarios".
+- Si el QR solo contiene una URL, un identificador o texto sin estructura,
+  deja TODOS los campos vacíos y pon EXACTAMENTE el texto original del QR en "comentarios".
+- NO inventes, NO completes, NO corrijas datos que no estén literal en el contenido del QR.
+
+Devuelve SOLO el JSON, sin texto adicional.
+`;
 
   try {
     const parts: any[] = [
@@ -102,23 +109,23 @@ export const extractClientDataFromQrImage = async (
 
     const raw = JSON.parse(text) as any;
 
-   const normalized: ScanResult = {
-    nombres: raw.nombres || '',
-    apellidos: raw.apellidos || '',
-    empresa: raw.empresa || '',
-    cargo: raw.cargo || '',
-    telefono: raw.telefono || '',
-    telefono2: raw.telefono2 || '',
-    correo: normalizeEmail(raw.correo || ''),
-    dni: raw.dni || '',
-    direccion: raw.direccion || '',
-    poblacion: raw.poblacion || '',
-    ciudad: raw.ciudad || '',
-    estado: raw.estado || '',
-    photoBase64: '',          
-    photoBackBase64: '',     
-    scanType: 'qr',
-    comentarios: raw.comentarios || '',
+    const normalized: ScanResult = {
+      nombres: raw.nombres || '',
+      apellidos: raw.apellidos || '',
+      empresa: raw.empresa || '',
+      cargo: raw.cargo || '',
+      telefono: raw.telefono || '',
+      telefono2: raw.telefono2 || '',
+      correo: normalizeEmail(raw.correo || ''),
+      dni: raw.dni || '',
+      direccion: raw.direccion || '',
+      poblacion: raw.poblacion || '',
+      ciudad: raw.ciudad || '',
+      estado: raw.estado || '',
+      photoBase64: '',
+      photoBackBase64: '',
+      scanType: 'qr',
+      comentarios: raw.comentarios || '',
     };
 
     return normalized;

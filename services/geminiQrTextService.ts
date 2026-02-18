@@ -53,13 +53,20 @@ Devuélveme SIEMPRE un JSON con exactamente estos campos:
 - estado
 - comentarios
 
-Reglas:
-- SOLO rellenes campos con información que esté de forma clara en el texto.
-- NO inventes nombres, teléfonos, correos ni direcciones.
-- Si no estás seguro de un dato, deja ese campo como "".
-- Si el QR solo contiene una URL o un identificador, deja todos los campos como ""
-  excepto "comentarios", donde pondrás EXACTAMENTE el texto original del QR.
-- Devuelve SOLO el JSON, sin texto adicional.
+REGLAS MUY ESTRICTAS (NO LAS INCUMPLES NUNCA):
+- SOLO rellenes campos si el dato está claramente presente y etiquetado
+  (por ejemplo claves vCard como N:, FN:, ORG:, TEL:, EMAIL:, ADR:
+   o claves JSON como "name", "company", "phone", "email", etc.).
+- NO deduzcas ni infieras datos a partir de frases, nombres de dominio,
+  texto de marketing, ni nada que no sea un campo explícito.
+- Si NO estás 100% seguro de un dato, ese campo debe ser "".
+- Si el contenido NO parece una vCard/MeCard/JSON clara, deja TODOS los campos vacíos
+  excepto "comentarios".
+- Si solo contiene una URL, un identificador o texto sin estructura,
+  deja TODOS los campos vacíos y pon EXACTAMENTE el texto original del QR en "comentarios".
+- NO inventes, NO completes, NO corrijas datos que no estén literal en el texto.
+
+Devuelve SOLO el JSON, sin texto adicional.
 `;
 
   const response = await ai.models.generateContent({
