@@ -618,10 +618,30 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSave, onCancel }
 
             <SectionHeader title="Cooperativa y compras" />
 
-            <ToggleField
-              label="Asociado a cooperativa"
-              name="isCooperativeMember"
-            />
+           {/* Cooperativa - Asociado a cooperativa */}
+          <div className="bg-white px-6 py-4 flex flex-col border-b border-gray-50 last:border-b-0">
+            <label className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-1">
+              Asociado a cooperativa
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                name="isCooperativeMember"
+                autoComplete="off"
+                // si quieres seguir usando string, cambia el tipo en Client a string
+                value={formData.isCooperativeMember ? String(formData.isCooperativeMember) : ''}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    // si lo cambias a string en el tipo, pon directamente e.target.value
+                    isCooperativeMember: e.target.value as any,
+                  }))
+                }
+                placeholder="Nombre o referencia de la cooperativa"
+                className="flex-1 text-gray-800 font-semibold focus:outline-none placeholder:text-gray-300 placeholder:font-normal"
+              />
+            </div>
+          </div>
 
             {/* Nº de socio */}
             <div className="bg-white px-6 py-4 flex flex-col border-b border-gray-50 last:border-b-0">
