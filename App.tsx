@@ -7,7 +7,31 @@ import ClientDetailsView from './components/ClientDetailsView';
 import SplashScreen from './components/SplashScreen';
 import { Home } from './components/Home';
 import { Client, ViewType, ScanResult } from './types';
-import { getClients, addClient, updateClient, deleteClient } from './services/clientsService';
+import { addClient, updateClient, deleteClient } from './services/clientsService';
+
+// 🔹 IMPORTS NUEVOS PARA TIEMPO REAL
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { initializeApp } from 'firebase/app';
+
+// Config Firebase (misma que en services/clientsService)
+const firebaseConfig = {
+  apiKey: 'AIzaSyDu5SnGIf49M-oDkA64gXGM-6SgIJjWZfY',
+  authDomain: 'cliente-qr.firebaseapp.com',
+  databaseURL: 'https://cliente-qr-default-rtdb.firebaseio.com',
+  projectId: 'cliente-qr',
+  storageBucket: 'cliente-qr.firebasestorage.app',
+  messagingSenderId: '122423317855',
+  appId: '1:122423317855:android:9be6df7917d0b7e5ad12ea',
+};
+
+// Evitar inicializar Firebase más de una vez en App
+let appInitialized = false;
+const ensureFirebaseApp = () => {
+  if (!appInitialized) {
+    initializeApp(firebaseConfig);
+    appInitialized = true;
+  }
+};
 
 // Conversión segura de ArrayBuffer a base64 (por chunks) – ahora solo la mantengo por si la reaprovechas
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -42,16 +66,112 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // 🔹 NUEVO: suscripción en tiempo real a clientesJG
   useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const lista = await getClients();
+    ensureFirebaseApp();
+    const db = getDatabase();
+    const clientsRef = ref(db, 'clientesJG');
+
+    const unsubscribe = onValue(
+      clientsRef,
+      snapshot => {
+        if (!snapshot.exists()) {
+          setClients([]);
+          return;
+        }
+
+        const data = snapshot.val() as Record<string, any>;
+
+        const lista: Client[] = Object.entries(data).map(([id, value]) => {
+          const v = value as any;
+
+          return {
+            id,
+            createdAt: v.createdAt || 0,
+
+            // DATOS DE CONTACTO
+            razonSocial: v.razonSocial || '',
+            nombres: v.nombres || '',
+            apellidos: v.apellidos || '',
+            nif: v.nif || '',
+            equivalenceSurcharge: !!v.equivalenceSurcharge,
+            direccion: v.direccion || '',
+            province: v.province || '',
+            poblacion: v.poblacion || '',
+            postalCode: v.postalCode || '',
+            telefono: v.telefono || '',
+            telefono2: v.telefono2 || '',
+            fax: v.fax || '',
+            correo: v.correo || '',
+            invoiceEmail: v.invoiceEmail || '',
+            isCooperativeMember: v.isCooperativeMember ?? '',
+            cooperativeNumber: v.cooperativeNumber || '',
+
+            purchasingContactName: v.purchasingContactName || '',
+            purchasingContactEmail: v.purchasingContactEmail || '',
+            purchasingContactPhone: v.purchasingContactPhone || '',
+
+            // CAMPOS GENERALES
+            empresa: v.empresa || '',
+            cargo: v.cargo || '',
+            web: v.web || '',
+            dni: v.dni || '',
+            ciudad: v.ciudad || '',
+            estado: v.estado || '',
+            comentarios: v.comentarios || '',
+            mapsUrl: v.mapsUrl || '',
+            photoBase64: v.photoBase64 || '',
+            photoBackBase64: v.photoBackBase64 || '',
+            profilePhotoBase64: v.profilePhotoBase64 || '',
+            scanType: v.scanType || 'manual',
+
+            // INTERÉS DE COMPRA
+            interestSignage: !!v.interestSignage,
+            interestStreetPlates: !!v.interestStreetPlates,
+            interestSpeedBumpsMirrors: !!v.interestSpeedBumpsMirrors,
+            interestBollardsBikeRacks: !!v.interestBollardsBikeRacks,
+            interestBalizamientoH75: !!v.interestBalizamientoH75,
+            interestProtections: !!v.interestProtections,
+            interestTripodsPosts: !!v.interestTripodsPosts,
+            interestMobileBases: !!v.interestMobileBases,
+            interestPlasticMetalFences: !!v.interestPlasticMetalFences,
+            interestWorksiteBalizamiento: !!v.interestWorksiteBalizamiento,
+            interestConesAccessories: !!v.interestConesAccessories,
+            interestSpraysTapes: !!v.interestSpraysTapes,
+            interestConstructionTools: !!v.interestConstructionTools,
+            interestVehicleSignage: !!v.interestVehicleSignage,
+            interestSignageBoards: !!v.interestSignageBoards,
+            interestNoParking: !!v.interestNoParking,
+            interestStreetPlates2: !!v.interestStreetPlates2,
+            interestParkingClamps: !!v.interestParkingClamps,
+
+            // TIPOLOGÍA DE CLIENTE
+            typeSupplyIndustry: !!v.typeSupplyIndustry,
+            typeIndustrialScreenPrinting: !!v.typeIndustrialScreenPrinting,
+            typeConstructionSupply: !!v.typeConstructionSupply,
+            typeVehicleWrapping: !!v.typeVehicleWrapping,
+            typeAgriculturalSupply: !!v.typeAgriculturalSupply,
+            typeSignage: !!v.typeSignage,
+            typeRental: !!v.typeRental,
+            typeWorkClothing: !!v.typeWorkClothing,
+            typeAutoParts: !!v.typeAutoParts,
+            typeSafetyEquipment: !!v.typeSafetyEquipment,
+            typeHardwareStore: !!v.typeHardwareStore,
+            typeHousehold: !!v.typeHousehold,
+            typeOther1: v.typeOther1 || '',
+            typeOther2: v.typeOther2 || '',
+          };
+        });
+
+        lista.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setClients(lista);
-      } catch (error) {
-        console.error('Error al cargar clientes desde Firebase:', error);
+      },
+      error => {
+        console.error('Error escuchando clientes en tiempo real:', error);
       }
-    };
-    loadClients();
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const handleDataExtracted = (data: ScanResult) => {
@@ -73,6 +193,7 @@ const App: React.FC = () => {
           scanType: (editingClient as ScanResult)?.scanType || 'manual',
         };
 
+    // Actualizamos estado local rápido (opcional, porque onValue ya trae los cambios)
     if (isEditing) {
       setClients(prev => prev.map(c => (c.id === targetClient.id ? targetClient : c)));
       setSelectedClient(targetClient);
@@ -151,7 +272,6 @@ const App: React.FC = () => {
           if (now - meta.cachedAt < PDF_CACHE_MS) {
             isCachedValid = true;
           } else {
-            // Expirado: limpiamos marcas
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheMetaKey);
           }
@@ -160,31 +280,20 @@ const App: React.FC = () => {
         }
       }
 
-      // Si el caché es válido, simplemente abrimos el PDF desde la URL
       if (isCachedValid && localStorage.getItem(cacheKey) === '1') {
-        console.log('>>> PDF cacheado vigente (lógica web), abriendo en nueva pestaña:', webPath);
         window.open(webPath, '_blank', 'noopener,noreferrer');
         return;
       }
 
-      console.log('>>> PDF no cacheado o caducado, verificando acceso a', webPath);
-
-      // En web: solo comprobamos que el recurso existe
       const response = await fetch(webPath, { method: 'HEAD' });
-      console.log('>>> Status HEAD', response.status);
 
       if (!response.ok) {
         throw new Error(`No se pudo acceder a ${webPath}: status ${response.status}`);
       }
 
-      // Marcamos caché como válido (no guardamos archivo, solo metadata)
       localStorage.setItem(cacheKey, '1');
-      localStorage.setItem(
-        cacheMetaKey,
-        JSON.stringify({ cachedAt: Date.now() }),
-      );
+      localStorage.setItem(cacheMetaKey, JSON.stringify({ cachedAt: Date.now() }));
 
-      console.log('>>> Marcando PDF como cacheado (web), abriendo en nueva pestaña');
       window.open(webPath, '_blank', 'noopener,noreferrer');
     } catch (e) {
       console.error('Error abriendo PDF (web)', e);
@@ -200,7 +309,6 @@ const App: React.FC = () => {
     openEmbeddedPdf('/pdf/anexo2026.pdf', 'anexo2026.pdf');
   };
 
-  // NUEVO: Tarifa 2025
   const handleOpenTarifaPdf = () => {
     openEmbeddedPdf('/pdf/tarifa2025.pdf', 'tarifa2025.pdf');
   };
