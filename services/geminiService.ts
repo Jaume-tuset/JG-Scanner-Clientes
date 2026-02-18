@@ -53,6 +53,7 @@ export const extractClientDataFromImage = async (
     - Si solo hay un teléfono, ponlo en "telefono" y deja "telefono2" como "".
     - Si la dirección está en varias líneas, júntala en "direccion".
     - Para el correo, lee literalmente lo que veas en la tarjeta.
+    
   `;
 
   try {
