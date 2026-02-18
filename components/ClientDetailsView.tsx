@@ -155,7 +155,7 @@ const ClientDetailsView: React.FC<ClientDetailsViewProps> = ({
               {client.nombres} {client.apellidos}
             </h3>
             <p className="text-blue-600 font-bold text-sm mt-1">
-              {client.empresa || 'Empresa N/A'}
+                {client.razonSocial || client.empresa || 'Empresa N/A'}
             </p>
             <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">
               ID Cliente: #{client.id.slice(0, 5)}

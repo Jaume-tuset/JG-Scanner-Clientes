@@ -165,6 +165,12 @@ const App: React.FC = () => {
 
         lista.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setClients(lista);
+
+        setSelectedClient(prev => {
+          if (!prev) return prev;
+          const refreshed = lista.find(c => c.id === prev.id);
+          return refreshed || prev;
+        });
       },
       error => {
         console.error('Error escuchando clientes en tiempo real:', error);
@@ -225,6 +231,25 @@ const App: React.FC = () => {
     };
 
     saveInBackground();
+  };
+
+  // 🔹 Actualizar cliente desde la vista de detalles (para la X de la foto de perfil)
+  const handleUpdateClientFromDetails = (updated: Client) => {
+    // actualizar lista local
+    setClients(prev => prev.map(c => (c.id === updated.id ? updated : c)));
+    // actualizar seleccionado
+    setSelectedClient(updated);
+
+    // sincronizar con Firebase
+    const save = async () => {
+      try {
+        await updateClient(updated);
+      } catch (error) {
+        console.error('Error actualizando cliente desde detalles:', error);
+        alert('No se ha podido actualizar el cliente en la nube.');
+      }
+    };
+    save();
   };
 
   const handleDeleteClient = async (id: string) => {
@@ -365,8 +390,7 @@ const App: React.FC = () => {
           client={selectedClient}
           onBack={() => setActiveTab('clients')}
           onEdit={handleEditClient}
-          // si quieres usar el botón de borrar foto de perfil:
-          onUpdateClient={() => {}}
+          onUpdateClient={handleUpdateClientFromDetails}
         />
       )}
 
