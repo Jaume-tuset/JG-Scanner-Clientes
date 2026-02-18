@@ -33,7 +33,7 @@ const ensureFirebaseApp = () => {
   }
 };
 
-// Conversión segura de ArrayBuffer a base64 (por chunks) – ahora solo la mantengo por si la reaprovechas
+// Conversión segura de ArrayBuffer a base64 (por chunks)
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   let binary = '';
   const bytes = new Uint8Array(buffer);
@@ -66,7 +66,7 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // 🔹 NUEVO: suscripción en tiempo real a clientesJG
+  // 🔹 Suscripción en tiempo real a clientesJG
   useEffect(() => {
     ensureFirebaseApp();
     const db = getDatabase();
@@ -183,20 +183,26 @@ const App: React.FC = () => {
   const handleSaveClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
     const isEditing = !!((editingClient as Client)?.id);
 
+    // Normalizamos razonSocial para que siempre tenga valor coherente
+    const normalizedData: Omit<Client, 'id' | 'createdAt'> = {
+      ...clientData,
+      razonSocial: clientData.razonSocial || clientData.empresa || '',
+    };
+
     const targetClient: Client = isEditing
-      ? { ...(editingClient as Client), ...clientData }
+      ? { ...(editingClient as Client), ...normalizedData }
       : {
-          ...clientData,
+          ...normalizedData,
           id: Math.random().toString(36).substr(2, 9),
           createdAt: Date.now(),
           photoBase64: (editingClient as ScanResult)?.photoBase64,
           scanType: (editingClient as ScanResult)?.scanType || 'manual',
         };
 
-    // Actualizamos estado local rápido (opcional, porque onValue ya trae los cambios)
+    // Actualizamos estado local rápido
     if (isEditing) {
       setClients(prev => prev.map(c => (c.id === targetClient.id ? targetClient : c)));
-      setSelectedClient(targetClient);
+      setSelectedClient(targetClient); // detalle verá la razón social actualizada
       setActiveTab('details');
     } else {
       setClients(prev => [targetClient, ...prev]);
@@ -359,6 +365,8 @@ const App: React.FC = () => {
           client={selectedClient}
           onBack={() => setActiveTab('clients')}
           onEdit={handleEditClient}
+          // si quieres usar el botón de borrar foto de perfil:
+          onUpdateClient={() => {}}
         />
       )}
 

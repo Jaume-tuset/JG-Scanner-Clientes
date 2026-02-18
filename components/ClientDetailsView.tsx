@@ -5,9 +5,15 @@ interface ClientDetailsViewProps {
   client: Client;
   onBack: () => void;
   onEdit: (client: Client) => void;
+  onUpdateClient: (client: Client) => void;
 }
 
-const ClientDetailsView: React.FC<ClientDetailsViewProps> = ({ client, onBack, onEdit }) => {
+const ClientDetailsView: React.FC<ClientDetailsViewProps> = ({
+  client,
+  onBack,
+  onEdit,
+  onUpdateClient,
+}) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [fullScreenImage, setFullScreenImage] = useState<'front' | 'back'>('front');
 
@@ -106,12 +112,44 @@ const ClientDetailsView: React.FC<ClientDetailsViewProps> = ({ client, onBack, o
                 </div>
               )}
             </div>
+
+            {/* Icono check existente */}
             <div className="absolute bottom-1 right-1 bg-blue-600 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center text-white">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
+
+            {/* NUEVO: botón X para borrar foto de perfil */}
+            {client.profilePhotoBase64 && (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  const updated: Client = { ...client, profilePhotoBase64: '' };
+                  onUpdateClient(updated);
+                }}
+                className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                aria-label="Eliminar foto de perfil"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
+
           <div className="text-center">
             <h3 className="text-3xl font-black text-gray-900">
               {client.nombres} {client.apellidos}
@@ -410,9 +448,9 @@ const ClientDetailsView: React.FC<ClientDetailsViewProps> = ({ client, onBack, o
               Datos fiscales y contacto
             </h5>
 
-            <InfoRow
+           <InfoRow
               label="Razón Social"
-              value={client.razonSocial || client.empresa || ''}
+              value={client.razonSocial || ''} 
               icon={null}
             />
             <InfoRow
