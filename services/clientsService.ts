@@ -57,7 +57,8 @@ export const getClients = async (): Promise<Client[]> => {
       fax: v.fax || "",
       correo: v.correo || "",
       invoiceEmail: v.invoiceEmail || "",
-      isCooperativeMember: !!v.isCooperativeMember,
+      // ahora isCooperativeMember es lo que venga de Firebase (puede ser string o boolean)
+      isCooperativeMember: v.isCooperativeMember ?? "",
       cooperativeNumber: v.cooperativeNumber || "",
 
       purchasingContactName: v.purchasingContactName || "",
@@ -74,6 +75,8 @@ export const getClients = async (): Promise<Client[]> => {
       comentarios: v.comentarios || "",
       mapsUrl: v.mapsUrl || "",
       photoBase64: v.photoBase64 || "",
+      photoBackBase64: v.photoBackBase64 || "",
+      profilePhotoBase64: v.profilePhotoBase64 || "",
       scanType: v.scanType || "manual",
 
       // INTERÉS DE COMPRA
