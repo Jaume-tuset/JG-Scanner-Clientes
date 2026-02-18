@@ -33,7 +33,7 @@ export const extractClientDataFromQrImage = async (
 En esta imagen hay un CÓDIGO QR (posiblemente junto a una tarjeta o texto).
 
 1) Primero, LEE el contenido EXACTO del QR (texto plano).
-2) Después, si el contenido del QR está en formato vCard, MeCard, JSON u otro texto estructurado,
+2) Después, si el contenido del QR está en formato vCard, MeCard, JSON, URL con parámetros u otro texto estructurado,
    interpreta SOLO esos datos y mapea a los siguientes campos.
 
 Devuélveme SIEMPRE un JSON con exactamente estos campos:
@@ -44,22 +44,28 @@ Devuélveme SIEMPRE un JSON con exactamente estos campos:
 - telefono
 - telefono2
 - correo
-- dni
+- web
 - direccion
-- poblacion
+- codigoPostal
+- localidad
 - ciudad
 - estado
+- cif
 - comentarios
 
 REGLAS MUY ESTRICTAS (NO LAS INCUMPLES NUNCA):
-- SOLO rellenes campos si el dato está claramente presente y etiquetado en el CONTENIDO DEL QR
-  (por ejemplo claves vCard como N:, FN:, ORG:, TEL:, EMAIL:, ADR:
-   o claves JSON como "name", "company", "phone", "email", etc.).
-- NO deduzcas ni infieras datos a partir de frases de la tarjeta, nombres de dominio,
-  texto de marketing o elementos visuales de la imagen.
+- SOLO rellenes campos si el dato está claramente presente en el CONTENIDO DEL QR o en sus parámetros, por ejemplo:
+  - vCard: N:, FN:, ORG:, TITLE:, TEL:, EMAIL:, ADR:
+  - texto tipo "Empresa: ACME, Tel: 123..., Email: info@..., Web: https://..."
+  - URL con parámetros claros como ?name=...&email=...&phone=...&company=...
+- Puedes separar nombre y apellidos si vienen juntos en un solo campo tipo "Juan Pérez García"
+  (primer token = nombres, resto = apellidos), pero NO inventes partes que falten.
+- codigoPostal: solo si ves un CP claro.
+- localidad / ciudad / estado: solo si están indicados de forma clara; si no, deja esos campos vacíos.
+- cif: incluye NIF/CIF/NIE solo si aparece explícitamente.
+- NO deduzcas ni infieras datos a partir de frases de la tarjeta, elementos visuales, nombres de dominio o texto de marketing.
 - Si NO estás 100% seguro de un dato, ese campo debe ser "".
-- Si el contenido del QR NO parece una vCard/MeCard/JSON clara, deja TODOS los campos vacíos
-  excepto "comentarios".
+- Si el contenido del QR NO es claramente estructurado, deja TODOS los campos vacíos y pon el texto original en "comentarios".
 - Si el QR solo contiene una URL, un identificador o texto sin estructura,
   deja TODOS los campos vacíos y pon EXACTAMENTE el texto original del QR en "comentarios".
 - NO inventes, NO completes, NO corrijas datos que no estén literal en el contenido del QR.
@@ -93,11 +99,13 @@ Devuelve SOLO el JSON, sin texto adicional.
             telefono: { type: Type.STRING },
             telefono2: { type: Type.STRING },
             correo: { type: Type.STRING },
-            dni: { type: Type.STRING },
+            web: { type: Type.STRING },
             direccion: { type: Type.STRING },
-            poblacion: { type: Type.STRING },
+            codigoPostal: { type: Type.STRING },
+            localidad: { type: Type.STRING },
             ciudad: { type: Type.STRING },
             estado: { type: Type.STRING },
+            cif: { type: Type.STRING },
             comentarios: { type: Type.STRING },
           },
         },
@@ -117,11 +125,13 @@ Devuelve SOLO el JSON, sin texto adicional.
       telefono: raw.telefono || '',
       telefono2: raw.telefono2 || '',
       correo: normalizeEmail(raw.correo || ''),
-      dni: raw.dni || '',
+      web: raw.web || '',
       direccion: raw.direccion || '',
-      poblacion: raw.poblacion || '',
+      codigoPostal: raw.codigoPostal || '',
+      localidad: raw.localidad || '',
       ciudad: raw.ciudad || '',
       estado: raw.estado || '',
+      cif: raw.cif || '',
       photoBase64: '',
       photoBackBase64: '',
       scanType: 'qr',

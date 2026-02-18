@@ -36,34 +36,39 @@ Te paso el CONTENIDO EXACTO de un código QR (texto plano):
 ${qrText}
 ---
 
-Puede ser vCard, MeCard, JSON o texto libre.
+Puede ser vCard, MeCard, JSON o texto libre (por ejemplo un bloque de datos de contacto o una URL con parámetros).
 
 Devuélveme SIEMPRE un JSON con exactamente estos campos:
-- nombres
-- apellidos
-- empresa
-- cargo
-- telefono
-- telefono2
-- correo
-- dni
-- direccion
-- poblacion
-- ciudad
-- estado
-- comentarios
+- nombres          (nombre de pila de la persona)
+- apellidos        (apellidos de la persona)
+- empresa          (nombre de la empresa)
+- cargo            (puesto de la persona)
+- telefono         (teléfono principal)
+- telefono2        (segundo teléfono si lo hay)
+- correo           (email principal)
+- web              (URL de la web de la empresa o persona)
+- direccion        (calle y número)
+- codigoPostal     (código postal)
+- localidad        (población / barrio)
+- ciudad           (ciudad / municipio)
+- estado           (provincia / estado / región)
+- cif              (NIF/CIF/NIE)
+- comentarios      (texto libre que no encaja claro en los campos anteriores)
 
 REGLAS MUY ESTRICTAS (NO LAS INCUMPLES NUNCA):
-- SOLO rellenes campos si el dato está claramente presente y etiquetado
-  (por ejemplo claves vCard como N:, FN:, ORG:, TEL:, EMAIL:, ADR:
-   o claves JSON como "name", "company", "phone", "email", etc.).
-- NO deduzcas ni infieras datos a partir de frases, nombres de dominio,
-  texto de marketing, ni nada que no sea un campo explícito.
+- SOLO rellenes campos si el dato está claramente presente en el texto del QR o en sus parámetros, por ejemplo:
+  - vCard: N:, FN:, ORG:, TITLE:, TEL:, EMAIL:, ADR:
+  - texto tipo "Empresa: ACME, Tel: 123..., Email: info@..., Web: https://..."
+  - URL con parámetros claros como ?name=...&email=...&phone=...&company=...
+- Puedes separar nombre y apellidos si vienen juntos en un solo campo tipo "Juan Pérez García"
+  (primer token = nombres, resto = apellidos), pero NO inventes partes que falten.
+- codigoPostal: solo si ves un CP claro.
+- localidad / ciudad / estado: solo si están indicados de forma clara; si no, deja esos campos vacíos.
+- cif: incluye NIF/CIF/NIE solo si aparece explícitamente.
+- NO deduzcas ni infieras datos a partir de nombres de dominio, texto de marketing o contexto.
 - Si NO estás 100% seguro de un dato, ese campo debe ser "".
-- Si el contenido NO parece una vCard/MeCard/JSON clara, deja TODOS los campos vacíos
-  excepto "comentarios".
-- Si solo contiene una URL, un identificador o texto sin estructura,
-  deja TODOS los campos vacíos y pon EXACTAMENTE el texto original del QR en "comentarios".
+- Si el contenido NO es claramente estructurado, deja TODOS los campos vacíos y pon el texto original en "comentarios".
+- Si solo hay una URL o identificador, deja TODOS los campos vacíos y pon EXACTAMENTE ese texto en "comentarios".
 - NO inventes, NO completes, NO corrijas datos que no estén literal en el texto.
 
 Devuelve SOLO el JSON, sin texto adicional.
@@ -84,11 +89,13 @@ Devuelve SOLO el JSON, sin texto adicional.
           telefono: { type: Type.STRING },
           telefono2: { type: Type.STRING },
           correo: { type: Type.STRING },
-          dni: { type: Type.STRING },
+          web: { type: Type.STRING },
           direccion: { type: Type.STRING },
-          poblacion: { type: Type.STRING },
+          codigoPostal: { type: Type.STRING },
+          localidad: { type: Type.STRING },
           ciudad: { type: Type.STRING },
           estado: { type: Type.STRING },
+          cif: { type: Type.STRING },
           comentarios: { type: Type.STRING },
         },
       },
@@ -108,11 +115,13 @@ Devuelve SOLO el JSON, sin texto adicional.
     telefono: raw.telefono || '',
     telefono2: raw.telefono2 || '',
     correo: normalizeEmail(raw.correo || ''),
-    dni: raw.dni || '',
+    web: raw.web || '',
     direccion: raw.direccion || '',
-    poblacion: raw.poblacion || '',
+    codigoPostal: raw.codigoPostal || '',
+    localidad: raw.localidad || '',
     ciudad: raw.ciudad || '',
     estado: raw.estado || '',
+    cif: raw.cif || '',
     photoBase64: '',
     photoBackBase64: '',
     scanType: 'qr',

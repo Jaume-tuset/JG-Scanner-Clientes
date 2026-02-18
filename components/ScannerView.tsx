@@ -22,10 +22,8 @@ const ScannerView: React.FC<ScannerViewProps> = ({
   const [scanType, setScanType] = useState<'tarjeta' | 'qr'>(initialType as 'tarjeta' | 'qr');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputQrRef = useRef<HTMLInputElement>(null);
-
   const [isScanningActive, setIsScanningActive] = useState(false);
 
-  // Flujo multi-foto tarjeta
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [backImage, setBackImage] = useState<string | null>(null);
   const [scanStep, setScanStep] = useState<'front' | 'askBack' | 'back' | 'done'>('front');
@@ -54,11 +52,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         telefono: '',
         telefono2: '',
         correo: '',
-        dni: '',
+        web: '',
         direccion: '',
-        poblacion: '',
+        codigoPostal: '',
+        localidad: '',
         ciudad: '',
         estado: '',
+        cif: '',
         comentarios: '',
         photoBase64: frontDataUrl,
         photoBackBase64: backDataUrl || '',
@@ -83,7 +83,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     e.target.value = '';
   };
 
-  // MODO QR 1: ML Kit en vivo (solo móvil)
   const handleScanQr = async () => {
     setIsScanningActive(true);
 
@@ -101,11 +100,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         telefono: '',
         telefono2: '',
         correo: '',
-        dni: '',
+        web: '',
         direccion: '',
-        poblacion: '',
+        codigoPostal: '',
+        localidad: '',
         ciudad: '',
         estado: '',
+        cif: '',
         photoBase64: '',
         photoBackBase64: '',
         scanType: 'qr',
@@ -142,9 +143,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     await processBase64Images(frontImage, backImage);
   };
 
-  // MODO QR móvil: foto + ML Kit + Gemini (texto o imagen)
   const handleScanQrWithPhotoAndText = async () => {
-    // Solo usar en nativo
     const dataUrl = await takePhotoBase64();
     if (!dataUrl) return;
 
@@ -155,11 +154,9 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     try {
       let parsed: ScanResult | null = null;
 
-      // 1) Intentar primero leer el QR desde la IMAGEN
       const fromImage = await extractClientDataFromQrImage(base64);
       parsed = fromImage;
 
-      // 2) Solo si no hay datos útiles, intentar leer el QR como TEXTO con ML Kit
       if (!parsed) {
         const content = await startQrScan();
         console.log('RESULTADO startQrScan >>>', content);
@@ -169,7 +166,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         }
       }
 
-      // 3) Construir resultado final
       if (parsed) {
         onDataExtracted({
           ...parsed,
@@ -186,11 +182,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
           telefono: '',
           telefono2: '',
           correo: '',
-          dni: '',
+          web: '',
           direccion: '',
-          poblacion: '',
+          codigoPostal: '',
+          localidad: '',
           ciudad: '',
           estado: '',
+          cif: '',
           photoBase64: dataUrl,
           photoBackBase64: '',
           scanType: 'qr',
@@ -207,11 +205,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         telefono: '',
         telefono2: '',
         correo: '',
-        dni: '',
+        web: '',
         direccion: '',
-        poblacion: '',
+        codigoPostal: '',
+        localidad: '',
         ciudad: '',
         estado: '',
+        cif: '',
         photoBase64: dataUrl,
         photoBackBase64: '',
         scanType: 'qr',
@@ -222,7 +222,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     }
   };
 
-  // MODO QR web: elegir imagen con QR y procesar con Gemini
   const handleQrFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -253,11 +252,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
             telefono: '',
             telefono2: '',
             correo: '',
-            dni: '',
+            web: '',
             direccion: '',
-            poblacion: '',
+            codigoPostal: '',
+            localidad: '',
             ciudad: '',
             estado: '',
+            cif: '',
             photoBase64: dataUrl,
             photoBackBase64: '',
             scanType: 'qr',
@@ -274,11 +275,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
           telefono: '',
           telefono2: '',
           correo: '',
-          dni: '',
+          web: '',
           direccion: '',
-          poblacion: '',
+          codigoPostal: '',
+          localidad: '',
           ciudad: '',
           estado: '',
+          cif: '',
           photoBase64: dataUrl,
           photoBackBase64: '',
           scanType: 'qr',
@@ -292,7 +295,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
     e.target.value = '';
   };
 
-  // MODO QR web: leer el QR desde la foto frontal de la tarjeta ya capturada
   const handleScanQrFromFrontImageWeb = async () => {
     if (!frontImage) {
       alert('Primero haz la foto de la tarjeta (frontal).');
@@ -322,11 +324,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
           telefono: '',
           telefono2: '',
           correo: '',
-          dni: '',
+          web: '',
           direccion: '',
-          poblacion: '',
+          codigoPostal: '',
+          localidad: '',
           ciudad: '',
           estado: '',
+          cif: '',
           photoBase64: frontImage,
           photoBackBase64: backImage || '',
           scanType: 'qr',
@@ -343,11 +347,13 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         telefono: '',
         telefono2: '',
         correo: '',
-        dni: '',
+        web: '',
         direccion: '',
-        poblacion: '',
+        codigoPostal: '',
+        localidad: '',
         ciudad: '',
         estado: '',
+        cif: '',
         photoBase64: frontImage,
         photoBackBase64: backImage || '',
         scanType: 'qr',
@@ -372,7 +378,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
           : {}
       }
     >
-      {/* Navbar Escáner */}
       {!isScanningActive && (
         <div className="px-4 py-3lec flex items-center justify-between text-gray-900 border-b border-gray-50 bg-white/80 backdrop-blur-md sticky top-0 z-10">
           <button
@@ -406,7 +411,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         </div>
       )}
 
-      {/* CONTENIDO PRINCIPAL */}
       {!isScanningActive && (
         <div className="flex-1 flex flex-col items-center justify-start px-4 pt-4 pb-2 text-center space-y-6">
           <div className="space-y-3">
@@ -502,7 +506,6 @@ const ScannerView: React.FC<ScannerViewProps> = ({
         </div>
       )}
 
-      {/* Footer controles */}
       {!isScanningActive && (
         <div className="bg-gray-50 px-6 pt-2 pb-4 space-y-4 rounded-t-[3rem] shadow-[0_-16px_32px_rgba(0,0,0,0.02)] transition-transform">
           <div className="bg-white/80 p-1.5 rounded-[1.8rem] flex border border-gray-100 shadow-inner max-w-xs mx-auto">
